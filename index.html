@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CityWare — Admin</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="footer.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- Mobile top bar -->
+  <div class="mobile-topbar">
+    <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menu">
+      <i class="ti ti-menu-2"></i>
+    </button>
+    <span class="brand-mobile">CityWare Admin</span>
+    <button class="theme-picker-btn" onclick="openThemePanel()" aria-label="Appearance" title="Change theme / background">
+      <i class="ti ti-palette"></i>
+    </button>
+  </div>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Brand -->
+    <div class="brand">
+      <i class="ti ti-building-skyscraper"></i>
+      <span>CityWare</span>
+      <span class="brand-tag">Admin</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav>
+      <div class="nav-section-label">Main</div>
+      <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard'); closeSidebar()">
+        <i class="ti ti-layout-dashboard"></i> Dashboard
+      </button>
+      <button class="nav-item" data-tab="setup" onclick="showTab('setup'); closeSidebar()">
+        <i class="ti ti-settings"></i> Setup
+      </button>
+      <button class="nav-item" data-tab="qr" onclick="showTab('qr'); closeSidebar()">
+        <i class="ti ti-qrcode"></i> Generate QR
+      </button>
+      <button class="nav-item" data-tab="employees" onclick="showTab('employees'); closeSidebar()">
+        <i class="ti ti-users"></i> Employees
+      </button>
+      <button class="nav-item" data-tab="log" onclick="showTab('log'); closeSidebar()">
+        <i class="ti ti-clipboard-list"></i> Attendance Log
+      </button>
+      <button class="nav-item" data-tab="economy" onclick="showTab('economy'); closeSidebar()">
+        <i class="ti ti-coin-rupee"></i> Salary
+      </button>
+
+      <div class="nav-section-label" style="margin-top:10px">Stock</div>
+      <button class="nav-item nav-item-stocks" onclick="showStocksModal()">
+        <i class="ti ti-package"></i> ITEMS
+      </button>
+
+      <div class="nav-section-label" style="margin-top:10px">Help</div>
+      <button class="nav-item" data-tab="howto" onclick="showTab('howto'); closeSidebar()">
+        <i class="ti ti-help-circle"></i> How to Use
+      </button>
+
+      <!-- Theme / Appearance button -->
+      <div class="nav-section-label" style="margin-top:10px">Appearance</div>
+      <button class="nav-item" onclick="openThemePanel()">
+        <i class="ti ti-palette"></i> Theme &amp; Background
+      </button>
+    </nav>
+
+    <!-- Sidebar Footer -->
+    <div class="sidebar-footer">
+      <div class="footer-copy">
+        <i class="ti ti-copyright" style="font-size:13px;opacity:0.6"></i>
+        <span>2026 Piyal Technologies</span>
+        <i class="ti ti-crown" style="font-size:12px;color:#f59e0b"></i>
+      </div>
+      <div class="footer-dev" onclick="window.open('https://piyal9.github.io/Piyal_Web/', '_blank')" style="cursor:pointer">
+        <i class="ti ti-code" style="font-size:12px;color:var(--blue)"></i>
+        <strong>Piyal Tambuli</strong>
+      </div>
+      <div class="footer-version">AttendQR v3.0 · Firebase</div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════════
+       THEME PANEL (slide-in drawer)
+  ══════════════════════════════════════════ -->
+  <div class="theme-panel-overlay" id="theme-panel-overlay" onclick="closeThemePanel()"></div>
+  <div class="theme-panel" id="theme-panel">
+    <div class="theme-panel-header">
+      <span><i class="ti ti-palette"></i> Appearance</span>
+      <button onclick="closeThemePanel()" class="tp-close"><i class="ti ti-x"></i></button>
+    </div>
+
+    <!-- Color Theme -->
+    <div class="tp-section-label">Color Theme</div>
+    <div class="theme-swatches">
+      <button class="swatch swatch-light active" onclick="setTheme('light')" title="Light">
+        <i class="ti ti-sun"></i><span>Light</span>
+      </button>
+      <button class="swatch swatch-dark" onclick="setTheme('dark')" title="Dark">
+        <i class="ti ti-moon"></i><span>Dark</span>
+      </button>
+      <button class="swatch swatch-ocean" onclick="setTheme('ocean')" title="Ocean Blue">
+        <i class="ti ti-droplet"></i><span>Ocean</span>
+      </button>
+      <button class="swatch swatch-forest" onclick="setTheme('forest')" title="Forest Green">
+        <i class="ti ti-leaf"></i><span>Forest</span>
+      </button>
+      <button class="swatch swatch-rose" onclick="setTheme('rose')" title="Rose">
+        <i class="ti ti-heart"></i><span>Rose</span>
+      </button>
+      <button class="swatch swatch-midnight" onclick="setTheme('midnight')" title="Midnight Purple">
+        <i class="ti ti-stars"></i><span>Midnight</span>
+      </button>
+    </div>
+
+    <!-- Background Image -->
+    <div class="tp-section-label" style="margin-top:1.25rem">Background Image</div>
+    <div class="bg-presets">
+      <button class="bg-preset bg-none active" onclick="setBg('none')" title="No background">
+        <i class="ti ti-ban"></i><span>None</span>
+      </button>
+      <button class="bg-preset" onclick="setBg('gradient1')" title="Gradient 1"
+        style="background:linear-gradient(135deg,#667eea,#764ba2)"></button>
+      <button class="bg-preset" onclick="setBg('gradient2')" title="Gradient 2"
+        style="background:linear-gradient(135deg,#f093fb,#f5576c)"></button>
+      <button class="bg-preset" onclick="setBg('gradient3')" title="Gradient 3"
+        style="background:linear-gradient(135deg,#4facfe,#00f2fe)"></button>
+      <button class="bg-preset" onclick="setBg('gradient4')" title="Gradient 4"
+        style="background:linear-gradient(135deg,#43e97b,#38f9d7)"></button>
+      <button class="bg-preset" onclick="setBg('gradient5')" title="Gradient 5"
+        style="background:linear-gradient(135deg,#fa709a,#fee140)"></button>
+    </div>
+
+    <div class="tp-upload-row">
+      <label class="btn-upload" for="bg-upload-input">
+        <i class="ti ti-upload"></i> Upload Image
+        <input type="file" id="bg-upload-input" accept="image/*" onchange="handleBgUpload(event)" style="display:none">
+      </label>
+      <button class="btn-upload-clear" onclick="setBg('none')">
+        <i class="ti ti-trash"></i> Clear BG
+      </button>
+    </div>
+
+    <div id="bg-preview-wrap" style="display:none;margin-top:10px">
+      <img id="bg-preview-img" style="width:100%;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+    </div>
+
+    <!-- Sidebar Accent -->
+    <div class="tp-section-label" style="margin-top:1.25rem">Sidebar Accent</div>
+    <div class="accent-swatches">
+      <button class="accent-dot" style="background:#378ADD" onclick="setAccent('#378ADD','#185FA5','#E6F1FB')" title="Blue"></button>
+      <button class="accent-dot" style="background:#7C3AED" onclick="setAccent('#7C3AED','#5B21B6','#EDE9FE')" title="Purple"></button>
+      <button class="accent-dot" style="background:#059669" onclick="setAccent('#059669','#047857','#D1FAE5')" title="Emerald"></button>
+      <button class="accent-dot" style="background:#DC2626" onclick="setAccent('#DC2626','#B91C1C','#FEE2E2')" title="Red"></button>
+      <button class="accent-dot" style="background:#D97706" onclick="setAccent('#D97706','#B45309','#FEF3C7')" title="Amber"></button>
+      <button class="accent-dot" style="background:#DB2777" onclick="setAccent('#DB2777','#BE185D','#FCE7F3')" title="Pink"></button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       STOCKS COMING SOON MODAL
+  ══════════════════════════════════════════ -->
+  <div class="modal-overlay" id="stocks-modal-overlay" onclick="closeStocksModal()" style="display:none"></div>
+  <div class="stocks-modal" id="stocks-modal" style="display:none">
+    <div class="stocks-modal-icon">
+      <i class="ti ti-package"></i>
+    </div>
+    <h2>Company Stock</h2>
+    <p class="stocks-coming-soon">Coming Soon</p>
+    <p class="stocks-desc">
+      Company inventory &amp; stock management is currently under development.<br>
+      For further updates or early access, contact:
+    </p>
+    <div class="stocks-contact">
+      <div class="contact-row">
+        <i class="ti ti-crown"></i>
+        <div>
+          <strong>Piyal</strong>
+          <span>Founder &amp; CEO, Piyal Technologies</span>
+        </div>
+      </div>
+      <div class="contact-row">
+        <i class="ti ti-code"></i>
+        <div>
+          <strong>Developer Piyal</strong>
+          <span>Lead Developer</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="closeStocksModal()" style="width:100%;margin-top:1rem;justify-content:center">
+      <i class="ti ti-x"></i> Close
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main" id="main-content">
+
+    <!-- ── DASHBOARD TAB ── -->
+    <section id="tab-dashboard" class="tab active">
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-sub" id="dash-company">Today's attendance overview at a glance.</p>
+
+      <div class="metrics-row">
+        <div class="metric-card metric-blue">
+          <div class="metric-val" id="dash-total">0</div>
+          <div class="metric-lbl"><i class="ti ti-users"></i> Total Employees</div>
+        </div>
+        <div class="metric-card metric-green">
+          <div class="metric-val" id="dash-present">0</div>
+          <div class="metric-lbl"><i class="ti ti-circle-check"></i> Present Today</div>
+        </div>
+        <div class="metric-card metric-red">
+          <div class="metric-val" id="dash-absent">0</div>
+          <div class="metric-lbl"><i class="ti ti-circle-x"></i> Absent Today</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-header">
+          <span class="card-title"><i class="ti ti-user-x"></i> Absent Today</span>
+        </div>
+        <div id="absent-list"><div class="empty-state">Loading…</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i class="ti ti-calendar-check"></i> Today's Check-ins</span>
+          <span class="card-date" id="today-date"></span>
+        </div>
+        <div class="log-header log-row log-row-timer">
+          <span>Employee</span><span>Dept</span><span>In Time</span><span>Timer</span><span>Status</span><span>Break</span>
+        </div>
+        <div id="today-log-list"><div class="empty-state">No attendance marked yet today.</div></div>
+      </div>
+    </section>
+
+    <!-- ── SETUP TAB ── -->
+    <section id="tab-setup" class="tab">
+      <h1 class="page-title">Setup</h1>
+      <p class="page-sub">Enter your company info — then go to <strong>Generate QR</strong>.</p>
+
+      <div class="notice">
+        <i class="ti ti-info-circle"></i>
+        <span>Set this up once. Generate the QR, print it, and place it at your entrance. Data is stored in <strong>Firebase Firestore</strong> — accessible from anywhere.</span>
+      </div>
+
+      <div class="card">
+        <div class="form-group">
+          <label>Company name</label>
+          <input id="company" type="text" placeholder="e.g. Acme Corp">
+        </div>
+        <div class="form-group">
+          <label>Office / Location</label>
+          <input id="location" type="text" placeholder="e.g. Head Office, Kolkata">
+        </div>
+        <div class="form-group">
+          <label>Scanner page URL</label>
+          <input id="scanner-url" type="url" placeholder="e.g. https://yoursite.com/scanner.html">
+          <p class="hint">Host <code>scanner.html</code> on GitHub Pages, Netlify, or any web server. Paste that URL here.</p>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="saveSettings()">
+            <i class="ti ti-device-floppy"></i> Save Settings
+          </button>
+          <span class="save-msg" id="save-msg"><i class="ti ti-check"></i> Saved!</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── QR TAB ── -->
+    <section id="tab-qr" class="tab">
+      <h1 class="page-title">Generate QR Code</h1>
+      <p class="page-sub">Generate once, print, and place at your entrance. Works forever.</p>
+
+      <div id="scanner-url-warning" class="notice" style="display:none">
+        <i class="ti ti-alert-triangle"></i>
+        <span>No scanner URL set. Go to <strong>Setup</strong> and enter the URL where <code>scanner.html</code> is hosted.</span>
+      </div>
+
+      <div id="no-employees-warning" class="notice" style="display:none">
+        <i class="ti ti-alert-triangle"></i>
+        <span>No employees added yet. Go to <strong>Employees</strong> tab and add at least one employee.</span>
+      </div>
+
+      <div class="card">
+        <div class="form-group">
+          <label>QR Size</label>
+          <select id="qr-size">
+            <option value="200">Small — 200 px</option>
+            <option value="280" selected>Medium — 280 px</option>
+            <option value="360">Large — 360 px (recommended for printing)</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="generateQR()">
+            <i class="ti ti-qrcode"></i> Generate QR
+          </button>
+          <button class="btn-secondary" id="dl-btn" onclick="downloadQR()" style="display:none">
+            <i class="ti ti-download"></i> Download PNG
+          </button>
+        </div>
+      </div>
+
+      <div class="qr-wrapper" id="qr-area">
+        <div class="qr-placeholder" id="qr-placeholder">
+          <i class="ti ti-qrcode"></i>
+          <p>Your QR will appear here</p>
+        </div>
+        <canvas id="qr-canvas" style="display:none"></canvas>
+        <div class="qr-label" id="qr-label" style="display:none"></div>
+      </div>
+
+      <div class="success-box" id="qr-success" style="display:none">
+        <i class="ti ti-check"></i>
+        <span>QR ready! Download and print it. Employees scan this and select their name to mark attendance.</span>
+      </div>
+    </section>
+
+    <!-- ── EMPLOYEES TAB ── -->
+    <section id="tab-employees" class="tab">
+      <h1 class="page-title">Employees</h1>
+      <p class="page-sub">Add employees who can mark attendance by scanning the QR.</p>
+
+      <div class="card" style="margin-bottom:1rem">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input id="emp-name" type="text" placeholder="e.g. Ravi Kumar"
+              onkeydown="if(event.key==='Enter') addEmployee()">
+          </div>
+          <div class="form-group">
+            <label>Department</label>
+            <input id="emp-dept" type="text" placeholder="e.g. Engineering"
+              onkeydown="if(event.key==='Enter') addEmployee()">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" onclick="addEmployee()">
+            <i class="ti ti-plus"></i> Add Employee
+          </button>
+          <label class="btn-secondary" style="cursor:pointer">
+            <i class="ti ti-file-import"></i> Import from Excel
+            <input type="file" id="import-file" accept=".xlsx,.xls" style="display:none" onchange="importEmployees(event)">
+          </label>
+          <span class="hint" style="margin-top:0">Columns: <code>Name</code>, <code>Department</code></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" style="margin-bottom:0.75rem">
+          <span class="card-title">Employee List (<span id="emp-count">0</span>)</span>
+        </div>
+        <div id="emp-list"></div>
+      </div>
+    </section>
+
+    <!-- ── LOG TAB ── -->
+    <section id="tab-log" class="tab">
+      <h1 class="page-title">Attendance Log</h1>
+      <p class="page-sub">Full attendance history stored in Firebase. Filter, search, export, and view details.</p>
+
+      <div class="log-filters card" style="margin-bottom:1rem">
+        <div class="grid-3">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Search employee</label>
+            <input id="log-search" type="text" placeholder="Name or department…" oninput="renderLog()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Filter by date</label>
+            <input id="log-date" type="date" oninput="renderLog()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Status</label>
+            <select id="log-status" onchange="renderLog()">
+              <option value="">All</option>
+              <option value="Present">Present</option>
+              <option value="Absent">Absent</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:0.75rem">
+          <button class="btn-primary" onclick="exportXLSX()">
+            <i class="ti ti-file-spreadsheet"></i> Export to Excel (.xlsx)
+          </button>
+          <button class="btn-secondary" onclick="clearLog()">
+            <i class="ti ti-trash"></i> Clear All Records
+          </button>
+        </div>
+      </div>
+
+      <div class="metrics-row" style="margin-bottom:1rem">
+        <div class="metric-card">
+          <div class="metric-val" id="log-stat-records">0</div>
+          <div class="metric-lbl">Records Shown</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="log-stat-today">0</div>
+          <div class="metric-lbl">Present Today</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="log-stat-total">0</div>
+          <div class="metric-lbl">Total Employees</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="log-header log-row-full">
+          <span>Employee</span><span>Dept</span><span>Date</span><span>Time</span><span>Status</span><span>Action</span>
+        </div>
+        <div id="log-list"><div class="empty-state">No records yet.</div></div>
+      </div>
+    </section>
+
+    <!-- ── ECONOMY TAB ── -->
+    <section id="tab-economy" class="tab">
+      <h1 class="page-title">Economy</h1>
+      <p class="page-sub">Set each employee's hourly wage and total hours worked this week — weekly pay is calculated instantly.</p>
+
+      <div class="metrics-row" style="margin-bottom:1rem">
+        <div class="metric-card metric-blue">
+          <div class="metric-val" id="eco-total-employees">0</div>
+          <div class="metric-lbl"><i class="ti ti-users"></i> Employees</div>
+        </div>
+        <div class="metric-card metric-green">
+          <div class="metric-val" id="eco-total-hours">0</div>
+          <div class="metric-lbl"><i class="ti ti-clock"></i> Total Hours (Week)</div>
+        </div>
+        <div class="metric-card metric-red">
+          <div class="metric-val" id="eco-total-payout">₹0</div>
+          <div class="metric-lbl"><i class="ti ti-cash"></i> Total Weekly Payout</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" style="margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span class="card-title"><i class="ti ti-coin-rupee"></i> Weekly Salary Sheet</span>
+          <button class="btn-primary" onclick="exportEconomyXLSX()" style="font-size:13px;padding:7px 14px">
+            <i class="ti ti-file-spreadsheet"></i> Export to Excel
+          </button>
+        </div>
+        <div class="eco-header eco-row">
+          <span>SlNo</span>
+          <span>Employee Name</span>
+          <span>Wage (₹/hr)</span>
+          <span>Total Hrs Worked (THW)</span>
+          <span>Weekly Pay (₹)</span>
+        </div>
+        <div id="eco-list"><div class="empty-state">Loading employees…</div></div>
+        <div class="eco-total-row" id="eco-grand-total" style="display:none">
+          <span></span>
+          <span style="font-weight:600;color:var(--text-primary)">Grand Total</span>
+          <span></span>
+          <span class="eco-total-val" id="eco-grand-hours">0 hrs</span>
+          <span class="eco-total-val" id="eco-grand-payout">₹0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── HOW TO USE TAB ── -->
+    <section id="tab-howto" class="tab">
+      <h1 class="page-title">How to Use</h1>
+      <p class="page-sub">Complete guide from first setup to daily attendance with Firebase.</p>
+
+      <div class="steps">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Host scanner.html</h3>
+            <p>Upload <code>scanner.html</code> to any static host: <a href="https://pages.github.com" target="_blank">GitHub Pages</a>, <a href="https://netlify.com" target="_blank">Netlify</a>, or your own server. Note down the URL.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Configure Setup</h3>
+            <p>Go to the <strong>Setup</strong> tab. Enter your company name, office location, and the scanner URL from step 1. Click <strong>Save Settings</strong>.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Add Employees</h3>
+            <p>Go to the <strong>Employees</strong> tab. Add staff one by one, or import from Excel (columns: <code>Name</code>, <code>Department</code>).</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Generate and Print QR</h3>
+            <p>Go to <strong>Generate QR</strong>, click Generate, then Download PNG. Print it in A4 and place it at your office entrance. The QR never expires.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">📱</div>
+          <div class="step-body">
+            <h3>Daily Use (Employees)</h3>
+            <p>Employees open their phone camera, scan the QR, and tap the link. They pick their name and tap <strong>Mark Attendance</strong>. Done — no app needed.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">📊</div>
+          <div class="step-body">
+            <h3>Viewing &amp; Exporting</h3>
+            <p>Go to <strong>Attendance Log</strong> to see all records. Filter by name, date, or status. Click <strong>Export to Excel</strong> to download a <code>.xlsx</code> file.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">❓</div>
+          <div class="step-body">
+            <h3>Common Questions</h3>
+            <p>
+              <strong>Do I regenerate the QR every day?</strong><br>No — once generated the same QR works forever.<br><br>
+              <strong>Where is data stored?</strong><br>In <strong>Firebase Firestore</strong> — accessible from anywhere.<br><br>
+              <strong>Can an employee mark twice?</strong><br>No — duplicates on the same day are blocked.<br><br>
+            </p>
+            <h3>Not Resolve?</h3>
+            <p>
+              <strong>Need Help?</strong><br>Contact Developer 
+              <br>piyaltambuli7@gmail.com / 8902821898.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
