@@ -239,7 +239,10 @@ async function getAttendance() {
                 device: data.device || '',
                 status: data.status || 'Present',
                 company: data.company || '',
-                location: data.location || ''
+                location: data.location || '',
+                totalTime: data.totalTime || '',
+                totalHours: data.totalHours || 0,
+                logoutTime: data.logoutTime || ''
             });
         });
         
@@ -303,24 +306,32 @@ async function renderDashboard() {
     } else {
         todayEl.innerHTML = `
           <div class="log-row log-row-timer log-header">
-            <span>Employee</span><span>Dept</span><span>In Time</span><span>Timer</span><span>Status</span><span>Break</span>
+            <span>Employee</span><span>Dept</span><span>In Time</span><span>Total Time</span><span>Status</span><span>Break</span>
           </div>
         ` + todayLogs.map(r => {
             const safeName = r.name.replace(/'/g, "\\'");
+            const hasLogout = r.totalTime && r.logoutTime;
             return `
             <div class="log-row log-row-timer" id="row-${r.name.replace(/\s+/g,'_')}">
                 <span style="font-weight:600">${r.name}</span>
                 <span style="color:var(--text-secondary)">${r.dept || '—'}</span>
                 <span style="color:var(--text-secondary)">${r.time || 'N/A'}</span>
                 <span class="timer-cell" id="timer-${r.name.replace(/\s+/g,'_')}">
-                  <span class="timer-display">00:00:00</span>
+                  ${hasLogout
+                    ? `<span class="timer-display" style="color:var(--green)">${r.totalTime}</span>
+                       <span style="font-size:11px;color:var(--text-hint);display:block">out ${r.logoutTime}</span>`
+                    : `<span class="timer-display">00:00:00</span>`
+                  }
                 </span>
-                <span><span class="badge badge-green" id="status-badge-${r.name.replace(/\s+/g,'_')}">${r.status || 'Present'}</span></span>
+                <span><span class="badge ${hasLogout ? 'badge-amber' : 'badge-green'}" id="status-badge-${r.name.replace(/\s+/g,'_')}">${hasLogout ? 'Logged Out' : (r.status || 'Present')}</span></span>
                 <span>
-                  <button class="btn-break" id="break-btn-${r.name.replace(/\s+/g,'_')}"
-                    onclick="toggleBreak('${safeName}')">
-                    <i class="ti ti-coffee"></i> Break
-                  </button>
+                  ${hasLogout
+                    ? `<span style="font-size:12px;color:var(--text-hint)">Shift ended</span>`
+                    : `<button class="btn-break" id="break-btn-${r.name.replace(/\s+/g,'_')}"
+                        onclick="toggleBreak('${safeName}')">
+                        <i class="ti ti-coffee"></i> Break
+                      </button>`
+                  }
                 </span>
             </div>`;
         }).join('');
@@ -476,12 +487,22 @@ async function renderLog() {
             : `<button class="btn-icon" onclick="viewAttendance('${r.name.replace(/'/g,"\\'")}', '${r.date}')" style="padding:4px 10px;">
                    <i class="ti ti-eye"></i> View
                </button>`;
+        // Total time display
+        let totalTimeDisplay = '—';
+        if (!isAbsent) {
+            if (r.totalTime) {
+                totalTimeDisplay = `<span style="font-family:monospace;font-weight:700;color:var(--green)">${r.totalTime}</span>`;
+            } else if (r.time) {
+                totalTimeDisplay = `<span style="color:var(--text-hint);font-size:12px">In progress…</span>`;
+            }
+        }
         return `
         <div class="log-row-full">
             <span style="font-weight:600">${r.name}</span>
             <span style="color:var(--text-secondary)">${r.dept || '—'}</span>
             <span style="color:var(--text-secondary)">${r.date || r.dateISO}</span>
             <span style="color:var(--text-secondary)">${r.time || '—'}</span>
+            <span>${totalTimeDisplay}</span>
             <span><span class="badge ${badgeCls}">${r.status}</span></span>
             ${viewBtn}
         </div>`;
@@ -505,7 +526,9 @@ async function viewAttendance(name, date) {
 👤 Employee: ${record.name}
 🏢 Department: ${record.dept || 'N/A'}
 📅 Date: ${record.date || record.dateISO}
-🕐 Time: ${record.time || 'N/A'}
+🕐 Time In: ${record.time || 'N/A'}
+🕐 Logout: ${record.logoutTime || 'Not logged out'}
+⏱ Total Time: ${record.totalTime || 'In progress'}
 📱 Device: ${record.device || 'N/A'}
 📊 Status: ${record.status || 'Present'}
 🏢 Company: ${record.company || 'N/A'}
@@ -535,12 +558,14 @@ async function exportXLSX() {
     const all = await getAttendance();
     if (!all.length) { alert('No attendance records to export.'); return; }
 
-    const headers = ['Name', 'Department', 'Date', 'Time', 'Device', 'Status', 'Company', 'Location'];
+    const headers = ['Name', 'Department', 'Date', 'Time In', 'Logout', 'Total Time', 'Device', 'Status', 'Company', 'Location'];
     const rows = all.map(r => [
         r.name || '',
         r.dept || '',
         r.date || r.dateISO || '',
         r.time || '',
+        r.logoutTime || '',
+        r.totalTime || '',
         r.device || '',
         r.status || 'Present',
         r.company || '',
@@ -569,6 +594,7 @@ function showTab(tabId) {
     if (tabId === 'employees') renderEmployees();
     if (tabId === 'log') renderLog();
     if (tabId === 'economy') renderEconomy();
+    if (tabId === 'billing') renderBillingTable();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -826,8 +852,11 @@ let _checkinTimes = {};
 function startDashboardTimers(todayLogs) {
     if (_dashTimerInterval) clearInterval(_dashTimerInterval);
 
+    // Only tick timers for employees who haven't logged out yet
+    const activeLogs = todayLogs.filter(r => !r.totalTime || !r.logoutTime);
+
     // Build checkin times from log (time string like "3:45:22 pm")
-    todayLogs.forEach(r => {
+    activeLogs.forEach(r => {
         const key = r.name;
         if (!_checkinTimes[key]) {
             // Parse time from record; fall back to now if unparseable
@@ -840,9 +869,11 @@ function startDashboardTimers(todayLogs) {
     });
 
     // Sync break states from Firestore once, then start ticking
-    syncBreakStatesFromFirestore(todayLogs).then(() => {
-        _dashTimerInterval = setInterval(() => tickTimers(todayLogs), 1000);
-        tickTimers(todayLogs); // immediate first tick
+    syncBreakStatesFromFirestore(activeLogs).then(() => {
+        if (activeLogs.length > 0) {
+            _dashTimerInterval = setInterval(() => tickTimers(activeLogs), 1000);
+            tickTimers(activeLogs); // immediate first tick
+        }
     });
 }
 
@@ -997,7 +1028,21 @@ async function renderEconomy() {
     return;
   }
 
-  list.innerHTML = _ecoEmployees.map((emp, i) => `
+  // Fetch today's attendance to pre-fill totalHours
+  const allAttendance = await getAttendance();
+  const today = todayStr();
+  // Build a map: empName -> totalHours for today
+  const hoursMap = {};
+  allAttendance.forEach(r => {
+    if ((r.dateISO === today || r.date === new Date(today + 'T00:00:00').toLocaleDateString('en-IN')) && r.totalHours > 0) {
+      hoursMap[r.name] = r.totalHours;
+    }
+  });
+
+  list.innerHTML = _ecoEmployees.map((emp, i) => {
+    const prefilled = hoursMap[emp.name] || '';
+    const hasTime = prefilled !== '';
+    return `
     <div class="eco-row">
       <span class="eco-serial">${i + 1}</span>
       <span>
@@ -1011,14 +1056,17 @@ async function renderEconomy() {
           oninput="calcEcoRow(${i})">
       </span>
       <span>
-        <input type="number" min="0" max="168" step="0.5"
+        <input type="number" min="0" max="168" step="0.01"
           id="eco-thw-${i}"
+          value="${prefilled ? prefilled.toFixed(2) : ''}"
           placeholder="e.g. 40"
-          oninput="calcEcoRow(${i})">
+          oninput="calcEcoRow(${i})"
+          style="${hasTime ? 'border-color:var(--green);background:var(--green-bg,#f0fdf4)' : ''}">
+        ${hasTime ? `<div style="font-size:11px;color:var(--green);margin-top:2px">⏱ ${allAttendance.find(r=>r.name===emp.name&&r.totalTime)?.totalTime||''} today</div>` : ''}
       </span>
       <span class="eco-payout" id="eco-pay-${i}">₹0</span>
     </div>
-  `).join('');
+  `}).join('');
 
   document.getElementById('eco-grand-total').style.display = 'grid';
   updateEcoSummary();
@@ -1087,3 +1135,127 @@ function exportEconomyXLSX() {
 window.renderEconomy      = renderEconomy;
 window.calcEcoRow         = calcEcoRow;
 window.exportEconomyXLSX  = exportEconomyXLSX;
+/* ══════════════════════════════════════════════════════
+   BILLING TAB
+══════════════════════════════════════════════════════ */
+
+let _billingRows = [];
+let _billingRowId = 0;
+
+function addBillingRow(custom) {
+  const select = document.getElementById('billing-item-select');
+  let itemName = '';
+
+  if (custom) {
+    itemName = '';  // blank — user types it
+  } else {
+    itemName = select?.value || '';
+    if (!itemName) { alert('Please select an item from the catalogue first.'); return; }
+    select.value = '';
+  }
+
+  const id = ++_billingRowId;
+  _billingRows.push({ id, name: itemName, qty: 1, price: '' });
+  renderBillingTable();
+}
+
+function renderBillingTable() {
+  const tbody = document.getElementById('billing-tbody');
+  const empty = document.getElementById('billing-empty');
+  const totalRow = document.getElementById('billing-total-row');
+
+  if (!_billingRows.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    totalRow.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  totalRow.style.display = '';
+
+  tbody.innerHTML = _billingRows.map((row, i) => {
+    const isEven = i % 2 === 0;
+    return `
+    <tr style="background:${isEven ? '#f8fafc' : '#fff'}">
+      <td style="padding:9px 12px;color:#888;font-size:13px">${i + 1}</td>
+      <td style="padding:9px 12px">
+        <input
+          class="billing-input billing-name"
+          value="${row.name.replace(/"/g, '&quot;')}"
+          placeholder="Item description…"
+          style="width:100%;border:none;background:transparent;font-size:14px;color:#111;outline:none;font-family:inherit"
+          oninput="updateBillingRow(${row.id}, 'name', this.value)"
+        >
+      </td>
+      <td style="padding:9px 12px">
+        <input
+          type="number" min="1"
+          class="billing-input"
+          value="${row.qty}"
+          style="width:60px;border:none;background:transparent;font-size:14px;color:#111;outline:none;text-align:right;font-family:inherit"
+          oninput="updateBillingRow(${row.id}, 'qty', this.value)"
+        >
+      </td>
+      <td style="padding:9px 12px;text-align:right">
+        <input
+          type="number" min="0" step="0.01"
+          class="billing-input"
+          value="${row.price}"
+          placeholder="—"
+          style="width:90px;border:none;border-bottom:1px solid #ccc;background:transparent;font-size:14px;color:#111;outline:none;text-align:right;font-family:inherit"
+          oninput="updateBillingRow(${row.id}, 'price', this.value)"
+        >
+      </td>
+      <td class="no-print" style="padding:9px 6px;text-align:center">
+        <button onclick="removeBillingRow(${row.id})"
+          style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:16px;line-height:1;padding:2px 6px"
+          title="Remove">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  updateBillingTotal();
+
+  // Set today's date
+  const dateEl = document.getElementById('bill-date');
+  if (dateEl && dateEl.textContent.trim() === '') {
+    dateEl.textContent = new Date().toLocaleDateString('en-IN');
+  }
+}
+
+function updateBillingRow(id, field, value) {
+  const row = _billingRows.find(r => r.id === id);
+  if (!row) return;
+  row[field] = field === 'qty' ? (parseInt(value) || 1) : value;
+  updateBillingTotal();
+}
+
+function removeBillingRow(id) {
+  _billingRows = _billingRows.filter(r => r.id !== id);
+  renderBillingTable();
+}
+
+function updateBillingTotal() {
+  let total = 0;
+  _billingRows.forEach(r => {
+    const p = parseFloat(r.price) || 0;
+    const q = parseInt(r.qty) || 1;
+    total += p * q;
+  });
+  const el = document.getElementById('billing-total-val');
+  if (el) el.textContent = total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function clearBill() {
+  if (_billingRows.length && !confirm('Clear all bill items?')) return;
+  _billingRows = [];
+  _billingRowId = 0;
+  const dateEl = document.getElementById('bill-date');
+  if (dateEl) dateEl.textContent = '';
+  renderBillingTable();
+}
+
+window.addBillingRow = addBillingRow;
+window.updateBillingRow = updateBillingRow;
+window.removeBillingRow = removeBillingRow;
+window.clearBill = clearBill;

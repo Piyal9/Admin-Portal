@@ -60,9 +60,9 @@
         <i class="ti ti-coin-rupee"></i> Salary
       </button>
 
-      <div class="nav-section-label" style="margin-top:10px">Stock</div>
-      <button class="nav-item nav-item-stocks" onclick="showStocksModal()">
-        <i class="ti ti-package"></i> ITEMS
+      <div class="nav-section-label" style="margin-top:10px">Billing</div>
+      <button class="nav-item" data-tab="billing" onclick="showTab('billing'); closeSidebar()">
+        <i class="ti ti-receipt"></i> Billing
       </button>
 
       <div class="nav-section-label" style="margin-top:10px">Help</div>
@@ -417,7 +417,7 @@
 
       <div class="card">
         <div class="log-header log-row-full">
-          <span>Employee</span><span>Dept</span><span>Date</span><span>Time</span><span>Status</span><span>Action</span>
+          <span>Employee</span><span>Dept</span><span>Date</span><span>Time In</span><span>Total Time</span><span>Status</span><span>Action</span>
         </div>
         <div id="log-list"><div class="empty-state">No records yet.</div></div>
       </div>
@@ -532,6 +532,383 @@
             </p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ── BILLING TAB ── -->
+    <section id="tab-billing" class="tab">
+      <h1 class="page-title"><i class="ti ti-receipt"></i> Billing</h1>
+      <p class="page-sub">Create a bill from the CityWare catalogue, enter prices, and print.</p>
+
+      <!-- Controls (hidden on print) -->
+      <div class="card no-print" style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px">Add Item from Catalogue</label>
+            <select id="billing-item-select" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-primary);font-size:14px;font-family:inherit">
+              <option value="">— Select an item —</option>
+              <optgroup label="Towel Rods, Racks &amp; Rings">
+                <option>Orkid Towel Rod (12", 18", 24", 30", 36")</option>
+                <option>Lily Towel Rod (12", 18", 24", 30", 36")</option>
+                <option>Rose Hook Towel Rod (12", 18", 24", 30", 36")</option>
+                <option>Jaba Towel Rod (12", 18", 24", 30", 36")</option>
+                <option>Brass Hook Towel Rod (12", 18", 24", 30", 36")</option>
+                <option>Acrylic Towel Rod (18", 24")</option>
+                <option>Orkid Towel Rack (18", 24")</option>
+                <option>Folding Towel Rack (18", 24")</option>
+                <option>Tulip Round Towel Ring</option>
+                <option>Tulip Square Towel Ring</option>
+                <option>Tulip C-Type Towel Ring</option>
+                <option>Acrylic Ring</option>
+                <option>Towel Ring Light</option>
+                <option>Orkid Round Towel Ring</option>
+                <option>Orkid Square Towel Ring</option>
+                <option>Orkid Oval Towel Ring</option>
+                <option>Orkid Triangle Towel Ring</option>
+                <option>Orkid C-Type Towel Ring</option>
+              </optgroup>
+              <optgroup label="Soap Dish">
+                <option>P.V.C. Soap Dish</option>
+                <option>Tulip No.3 C.P. Soap Dish</option>
+                <option>Tulip No.18 C.P. Soap Dish</option>
+                <option>Tulip No.17 C.P. Soap Dish</option>
+                <option>China Soap Dish</option>
+                <option>Soap Dish Orkid</option>
+                <option>Lily Soap Dish</option>
+                <option>Conceal Soap Dish</option>
+                <option>Fancy Soap Dish</option>
+                <option>Conceal Smily Soap Dish</option>
+                <option>Soap Dish No.50</option>
+                <option>Unbreakable Square Soap Dish</option>
+                <option>Unbreakable Oval Soap Dish</option>
+                <option>Acrylic Soap Dish Oval</option>
+                <option>Double Soap Dish</option>
+                <option>Acrylic Soap Dish Square</option>
+                <option>Acrylic Double Soap Dish Square</option>
+                <option>Acrylic Double Soap Dish Oval</option>
+                <option>Fancy Double Soap Dish</option>
+                <option>Brass Soap Dish Square (Medium)</option>
+                <option>Brass Soap Dish Square (Heavy)</option>
+                <option>Brass Soap Dish Oval (Heavy)</option>
+              </optgroup>
+              <optgroup label="Cock, Valve &amp; Hose">
+                <option>Polo Bib Cock</option>
+                <option>Filter Bib Cock</option>
+                <option>Polo 2-in-1 Bibcock</option>
+                <option>UPVC Ball Valve</option>
+                <option>Polo Swan Neck</option>
+                <option>Polo Sink Cock</option>
+                <option>Polo Angel Cock</option>
+                <option>S.S. Angel Cock</option>
+                <option>Brass Angel Cock</option>
+                <option>ABS Shower Holder</option>
+                <option>S.S. Shower Holder</option>
+                <option>Turbo Flex</option>
+                <option>Cascade Commode Syphone (6", 8", 10")</option>
+                <option>Cascade Commode Ballcock</option>
+                <option>Foam Flow Male + Female</option>
+                <option>Jet Spray P.V.C.</option>
+                <option>Health Faucet Polo</option>
+                <option>Shower Hose Steel (1M, 1.5M)</option>
+                <option>PTMT Shower Hose (1M, 1.5M)</option>
+                <option>PTMT Connection Pipe (12"–48")</option>
+                <option>Geyser S/S Connection Pipe (12"–30")</option>
+              </optgroup>
+              <optgroup label="Toilet Paper Holder, Liquid Dispenser, Tumbler Holder">
+                <option>304 S.S. Toilet Paper Holder</option>
+                <option>Rose 304 S.S. Toilet Paper Holder</option>
+                <option>S.S. Toilet Paper Holder</option>
+                <option>Orkid Toilet Paper Holder</option>
+                <option>Acrylic Toilet Paper Holder</option>
+                <option>Square Liquid Soap Dispenser - Black</option>
+                <option>Square Liquid Soap Dispenser - White</option>
+                <option>Square Liquid Soap Dispenser - C.P.</option>
+                <option>Capsule Liquid Soap Dispenser - Black</option>
+                <option>Capsule Liquid Soap Dispenser - White</option>
+                <option>Capsule Liquid Soap Dispenser - C.P.</option>
+                <option>Capsule Liquid Soap Dispenser - Golden</option>
+                <option>S.S. Tumbler</option>
+                <option>S.S. Tumbler No.54</option>
+                <option>S.S. Tumbler No.20</option>
+                <option>Unbreakable Tumbler</option>
+                <option>Unbreakable Multi User Tumbler</option>
+                <option>Acrylic Tumbler</option>
+              </optgroup>
+              <optgroup label="Set Top Box Shelf, Corner Shelf">
+                <option>Unbreakable Set Top Box Small</option>
+                <option>Unbreakable Set Top Box Big</option>
+                <option>Acrylic Set Top Box</option>
+                <option>Glass Set Top Box</option>
+                <option>9x9 S.S. Corner</option>
+                <option>9"x9" 304 S.S. Fancy Corner</option>
+                <option>9"x9" 304 S.S. High Railing Corner</option>
+                <option>Gorgeous Corner</option>
+                <option>P.V.C. Corner Set</option>
+                <option>Unbreakable Corner Set</option>
+                <option>Acrylic Corner 8x8</option>
+                <option>Acrylic Corner 9x9</option>
+                <option>Acrylic Corner 10x10</option>
+                <option>Acrylic Corner 11x11</option>
+                <option>Acrylic Corner 12x12</option>
+                <option>Wide Railing Acrylic Corner 8x8</option>
+                <option>Wide Railing Acrylic Corner 10x10</option>
+                <option>Wide Railing Acrylic Corner 12x12</option>
+                <option>Acrylic Corner Set (8x8, 10x10, 12x12)</option>
+                <option>Smoke Acrylic Corner 8x8</option>
+                <option>Smoke Acrylic Corner 10x10</option>
+                <option>Smoke Acrylic Corner 12x12</option>
+                <option>Glass Corner (8x8, 10x10, 12x12)</option>
+              </optgroup>
+              <optgroup label="Shelf">
+                <option>16" China Tray Flower</option>
+                <option>16" China Tray Capsule</option>
+                <option>16" China Tray Star</option>
+                <option>Unbreakable Shelf (12", 15", 18")</option>
+                <option>Double Shelf with Towel Rod</option>
+                <option>Single Shelf with Towel Rod</option>
+                <option>Acrylic Shelf Square (12"–18")</option>
+                <option>Wide Railing Acrylic Shelf (12"–18")</option>
+                <option>Acrylic Shelf Oval (12"–18")</option>
+                <option>Acrylic Multi Shelf</option>
+                <option>12" 304 S.S. Fancy Shelf</option>
+                <option>12" 304 S.S. High Railing Shelf</option>
+                <option>16" 304 S.S. Gorgeous Shelf</option>
+                <option>Glass Shelf (12"–18")</option>
+              </optgroup>
+              <optgroup label="Color Mirror, Plain Mirror">
+                <option>Color Mirror No.1</option>
+                <option>Color Mirror No.2</option>
+                <option>Color Mirror No.3</option>
+                <option>Color Mirror No.4</option>
+                <option>Color Mirror No.5</option>
+                <option>Color Mirror No.6</option>
+                <option>Color Mirror No.7</option>
+                <option>Color Mirror No.8</option>
+                <option>Color Mirror No.9</option>
+                <option>Color Mirror No.10</option>
+                <option>Color Mirror No.11</option>
+                <option>Color Mirror No.12</option>
+                <option>Color Mirror No.13</option>
+                <option>Color Mirror No.14</option>
+                <option>Color Mirror No.15</option>
+                <option>Color Mirror No.16</option>
+                <option>Color Mirror No.17</option>
+                <option>Color Mirror No.18</option>
+                <option>Color Mirror No.19</option>
+                <option>Color Mirror No.20</option>
+                <option>Plain Mirror Square (12x16"–18x24")</option>
+                <option>Plain Mirror Oval (12x16"–18x24")</option>
+                <option>Plain Mirror India Gate (12x16"–18x24")</option>
+                <option>Plain Mirror Round (16x16"–24x24")</option>
+              </optgroup>
+              <optgroup label="Black &amp; White Mirror, LED Mirror">
+                <option>B&amp;W Mirror Beauty (12x16"–16x20")</option>
+                <option>B&amp;W Mirror Square (12x16"–16x20")</option>
+                <option>B&amp;W Mirror Wave (12x16"–16x20")</option>
+                <option>B&amp;W Mirror Nokia (12x16"–16x20")</option>
+                <option>B&amp;W Mirror India Gate (12x16"–16x20")</option>
+                <option>B&amp;W Mirror China Gate (12x16"–16x20")</option>
+                <option>B&amp;W Mirror Capsule (12x16"–16x20")</option>
+                <option>B&amp;W Mirror Oval (12x16"–16x20")</option>
+                <option>LED Sensor Mirror No.1 (18x24")</option>
+                <option>LED Sensor Mirror No.2 (18x24")</option>
+                <option>LED Sensor Mirror No.3 (18x24")</option>
+                <option>LED Sensor Mirror No.4 (18x24")</option>
+                <option>LED Sensor Mirror No.5 (18x24")</option>
+                <option>LED Sensor Mirror No.6 (18x24")</option>
+                <option>LED Sensor Mirror No.7 Round</option>
+                <option>LED Sensor Mirror No.8 Round</option>
+                <option>LED Sensor Mirror No.9 Round</option>
+                <option>LED Sensor Mirror No.10 Round</option>
+                <option>LED Sensor Mirror No.11 Round</option>
+                <option>LED Sensor Mirror No.12 Round</option>
+              </optgroup>
+              <optgroup label="Cabinet">
+                <option>CityWare Cabinet (490x340x125mm, 9 Colors)</option>
+                <option>Corner Cabinet</option>
+                <option>LED Cabinet - Border Design</option>
+                <option>LED Cabinet - Multi Square Design</option>
+                <option>LED Cabinet - Abstract Design</option>
+                <option>LED Cabinet - Greek Border Design</option>
+                <option>10x14 MOP Cabinet</option>
+                <option>12x16 MOP Cabinet</option>
+                <option>15x18 MOP Cabinet</option>
+              </optgroup>
+              <optgroup label="Waste, Extension, Flange">
+                <option>S.S. Sink Waste (3", 4")</option>
+                <option>China Bucket Sink Waste (4")</option>
+                <option>PVC Sink Waste (3", 4")</option>
+                <option>S.S. Sink Net (3", 4")</option>
+                <option>S.S. Sink Waste Square 4"</option>
+                <option>Steel Basin Waste (Full Thread)</option>
+                <option>Steel Basin Waste (Half Thread)</option>
+                <option>Brass Basin Waste (Full+Half Thread, 3"+6")</option>
+                <option>Basin Waste Steel (6"+9")</option>
+                <option>Pop Up Basin Waste (5", 7")</option>
+                <option>Pop Up Basin Waste 3"</option>
+                <option>Ceramic Pop Up Basin Waste (3", 5", 7")</option>
+                <option>Steel Extension (Pure) 1"–3"</option>
+                <option>S.S. Flange (Heavy)</option>
+                <option>S.S. Flange Washer (Heavy)</option>
+              </optgroup>
+              <optgroup label="Jali &amp; Khunti">
+                <option>S.S. Round Jali (3", 4", 5")</option>
+                <option>S.S. Round Jali Hole (3", 4", 5")</option>
+                <option>S.S. Square Jali (3", 4", 5", 6")</option>
+                <option>S.S. Bati Jali (3", 4", 5")</option>
+                <option>S.S. Bati Jali Hole (3", 4", 5")</option>
+                <option>Round Lock Jali 5"</option>
+                <option>Square Lock Jali 5"</option>
+                <option>Round Hinge Jali 5"</option>
+                <option>Square Lock Jali 5", 6"</option>
+                <option>S.S. Jali Deep 5"</option>
+                <option>Anti Cockroach Jali</option>
+                <option>Khunti L-Type (4, 6, 8 Point)</option>
+                <option>Khunti G-Type (4, 6, 8 Point)</option>
+                <option>Three Way Hook</option>
+                <option>Single Hook</option>
+                <option>Single Hook Apple</option>
+                <option>Kite Khunti</option>
+                <option>Square Shower Arm Heavy (9"–24")</option>
+                <option>Shower Arm Brass (9"–24")</option>
+                <option>Grab Bar Heavy (9"–24")</option>
+              </optgroup>
+              <optgroup label="Bolt, Clamp &amp; Adapter">
+                <option>Basin Bolt S.S.</option>
+                <option>Basin Bolt M.S.</option>
+                <option>Hanging Commode Bolt S.S.</option>
+                <option>UPVC Nail Clamp (All Sizes)</option>
+                <option>CPVC Nail Clamp (3/4")</option>
+                <option>S.W.R. Clamp (3", 4")</option>
+                <option>Hose Clamp (3/4", 1", 1-1/4")</option>
+                <option>S.S. Bit Nipple 1/2"</option>
+                <option>Test Plug</option>
+                <option>Waste Pipe (Heavy)</option>
+                <option>Taflon Tape</option>
+                <option>F Bracket for Glass</option>
+                <option>CPVC Mixture Adapter</option>
+              </optgroup>
+              <optgroup label="Health Faucets">
+                <option>Health Faucet Gold</option>
+                <option>Health Faucet Diamond</option>
+                <option>Health Faucet White Diamond PTMT</option>
+                <option>Health Faucet Steel 304</option>
+                <option>Health Faucet German</option>
+                <option>Health Faucet Brass</option>
+              </optgroup>
+              <optgroup label="Tele Phone Shower">
+                <option>Tele Phone Shower No.1 Multi Mode</option>
+                <option>Tele Phone Shower No.2A</option>
+                <option>Tele Phone Shower No.2B</option>
+                <option>Tele Phone Shower Safari</option>
+                <option>Tele Phone Shower Capsule</option>
+                <option>Tele Phone Shower Sleek</option>
+              </optgroup>
+              <optgroup label="Over Head Shower">
+                <option>Over Head Shower Jaquare</option>
+                <option>Over Head Shower Galaxy</option>
+                <option>Over Head Shower Brass</option>
+                <option>Over Head Shower Platina</option>
+                <option>Over Head Shower Terim</option>
+                <option>Over Head Shower Conti</option>
+                <option>Over Head Shower Prado</option>
+                <option>Over Head Shower Ultra Slim</option>
+                <option>Over Head Shower Ultra Slim Round</option>
+                <option>Over Head Shower Sandwich Square</option>
+                <option>Over Head Shower Sandwich Round</option>
+                <option>Over Head Shower Curve</option>
+              </optgroup>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="addBillingRow()" style="margin-top:18px;white-space:nowrap">
+            <i class="ti ti-plus"></i> Add Item
+          </button>
+          <button class="btn-secondary" onclick="addBillingRow(true)" style="margin-top:18px;white-space:nowrap">
+            <i class="ti ti-pencil"></i> Add Custom
+          </button>
+        </div>
+      </div>
+
+      <!-- THE PRINTABLE BILL -->
+      <div id="billing-print-area" style="
+        background:#fff;
+        border:1px solid #e2e8f0;
+        border-radius:12px;
+        padding:32px 36px;
+        max-width:700px;
+        margin:0 auto;
+        font-family:'Segoe UI',Arial,sans-serif;
+        color:#111;
+        box-shadow:0 2px 16px rgba(0,0,0,0.07);
+      ">
+        <!-- Company Header -->
+        <div style="text-align:center;border-bottom:2px solid #1a3a5c;padding-bottom:16px;margin-bottom:20px">
+          <div style="font-size:28px;font-weight:900;letter-spacing:1px;color:#1a3a5c">🐢 CityWare®</div>
+          <div style="font-size:12px;color:#555;margin-top:2px;letter-spacing:2px;text-transform:uppercase">100% Stainless Steel · Long Lasting. Ever Green.</div>
+          <div style="font-size:11px;color:#888;margin-top:6px"></div>
+        </div>
+
+        <!-- Bill meta row -->
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#444;margin-bottom:18px;flex-wrap:wrap;gap:8px">
+          <div>
+            <span style="font-weight:600">Bill No:</span>
+            <span id="bill-number" style="border-bottom:1px solid #ccc;display:inline-block;min-width:80px;padding:0 4px">&nbsp;</span>
+          </div>
+          <div>
+            <span style="font-weight:600">Date:</span>
+            <span style="border-bottom:1px solid #ccc;display:inline-block;min-width:100px;padding:0 4px" id="bill-date">&nbsp;</span>
+          </div>
+          <div>
+            <span style="font-weight:600">Customer:</span>
+            <span style="border-bottom:1px solid #ccc;display:inline-block;min-width:120px;padding:0 4px">&nbsp;</span>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <table id="billing-table" style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="background:#1a3a5c;color:#fff">
+              <th style="padding:10px 12px;text-align:left;width:44px;border-radius:4px 0 0 0">#</th>
+              <th style="padding:10px 12px;text-align:left">Item Description</th>
+              <th style="padding:10px 12px;text-align:right;width:100px">Qty</th>
+              <th style="padding:10px 12px;text-align:right;width:120px">Price (₹)</th>
+              <th class="no-print" style="padding:10px 12px;text-align:center;width:44px;border-radius:0 4px 0 0"></th>
+            </tr>
+          </thead>
+          <tbody id="billing-tbody">
+            <!-- rows injected here -->
+          </tbody>
+          <tfoot>
+            <tr id="billing-total-row" style="display:none">
+              <td colspan="2" class="no-print"></td>
+              <td colspan="2" style="padding:12px;border-top:2px solid #1a3a5c;font-weight:700;font-size:15px;text-align:right;color:#1a3a5c">
+                Total: ₹<span id="billing-total-val">0</span>
+              </td>
+              <td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div id="billing-empty" style="text-align:center;color:#aaa;padding:32px 0;font-size:14px">
+          <i class="ti ti-receipt-off" style="font-size:32px;display:block;margin-bottom:8px"></i>
+          No items added yet. Select an item above and click <strong>Add Item</strong>.
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px;font-size:11px;color:#999;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">
+          <span>Thank you for your business!</span>
+          <span>CityWare® — 100% Stainless Steel Products</span>
+        </div>
+      </div>
+
+      <!-- Print button -->
+      <div class="no-print" style="text-align:center;margin-top:1.25rem;display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+        <button class="btn-primary" onclick="window.print()" style="padding:12px 28px;font-size:15px">
+          <i class="ti ti-printer"></i> Print / Save as PDF
+        </button>
+        <button class="btn-secondary" onclick="clearBill()" style="padding:12px 20px">
+          <i class="ti ti-trash"></i> Clear Bill
+        </button>
       </div>
     </section>
 

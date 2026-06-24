@@ -829,7 +829,7 @@ button { cursor: pointer; font-family: inherit; }
 
 .log-row-full {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1.2fr 1fr 1fr 0.8fr;
+  grid-template-columns: 1.5fr 1fr 1.2fr 0.9fr 1.1fr 0.9fr 0.7fr;
   gap: 8px;
   padding: 9px 0;
   font-size: 13px;
@@ -1025,4 +1025,47 @@ button { cursor: pointer; font-family: inherit; }
   .eco-serial { display: none; }
   .eco-row, .eco-total-row { grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 0; }
   .theme-panel { width: 100%; }
+}
+/* ══════════════════════════════════
+   BILLING PRINT STYLES
+══════════════════════════════════ */
+.billing-input:focus {
+  background: #fffbeb !important;
+  border-radius: 3px;
+}
+
+@media print {
+  /* Hide everything except the bill */
+  .sidebar, .mobile-topbar, .sidebar-overlay,
+  .theme-panel, .theme-panel-overlay,
+  .stocks-modal, .modal-overlay,
+  .no-print,
+  .page-title, .page-sub,
+  nav, .brand, .sidebar-footer { display: none !important; }
+
+  body, .app, .main { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+
+  .tab { display: none !important; }
+  #tab-billing { display: block !important; padding: 0 !important; }
+
+  #billing-print-area {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .billing-input {
+    border: none !important;
+    background: transparent !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  table thead tr {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
