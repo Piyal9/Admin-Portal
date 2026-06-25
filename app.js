@@ -886,8 +886,14 @@ async function syncBreakStatesFromFirestore(todayLogs) {
                 const bs = _breakStates[r.name] || { onBreak: false, breakStart: null, totalBreakMs: 0 };
                 bs.totalBreakMs = d.totalBreakMs || 0;
                 bs.onBreak = d.onBreak || false;
-                if (bs.onBreak && d.breakStart) {
-                    bs.breakStart = d.breakStart.toDate ? d.breakStart.toDate() : new Date(d.breakStart);
+                if (bs.onBreak && (d.breakStart || d.breakStartISO)) {
+                    // Restore the exact moment break started — used to freeze the timer display
+                    // Prefer breakStartISO (reliable ISO string) over Firestore Timestamp
+                    if (d.breakStartISO) {
+                        bs.breakStart = new Date(d.breakStartISO);
+                    } else {
+                        bs.breakStart = d.breakStart.toDate ? d.breakStart.toDate() : new Date(d.breakStart);
+                    }
                 } else {
                     bs.breakStart = null;
                 }
@@ -907,16 +913,17 @@ function tickTimers(todayLogs) {
         if (!el) return;
 
         const checkin = _checkinTimes[key] || now;
-        let elapsedMs = now - checkin;
-
-        // Subtract total past break time
         const bs = _breakStates[key] || { onBreak: false, breakStart: null, totalBreakMs: 0 };
-        let breakMs = bs.totalBreakMs || 0;
-        // If currently on break, add current break segment
+
+        let elapsedMs;
         if (bs.onBreak && bs.breakStart) {
-            breakMs += now - bs.breakStart;
+            // Employee is on break — FREEZE the timer at the moment break started
+            // Only count time from checkin up to breakStart, minus any prior break time
+            elapsedMs = Math.max(0, (bs.breakStart - checkin) - (bs.totalBreakMs || 0));
+        } else {
+            // Employee is active — count from checkin to now, minus all past break time
+            elapsedMs = Math.max(0, (now - checkin) - (bs.totalBreakMs || 0));
         }
-        elapsedMs = Math.max(0, elapsedMs - breakMs);
 
         el.textContent = msToHMS(elapsedMs);
     });
@@ -951,20 +958,21 @@ async function toggleBreak(name) {
     const now = new Date();
 
     if (!bs.onBreak) {
-        // Start break
+        // Start break — freeze the timer at this exact moment
         bs.onBreak = true;
-        bs.breakStart = now;
+        bs.breakStart = now;  // local Date used immediately to freeze display
         _breakStates[name] = bs;
         updateBreakBtn(name, true);
         try {
             await firestore.collection('attendance').doc(name).set({
                 onBreak: true,
                 breakStart: firebase.firestore.FieldValue.serverTimestamp(),
+                breakStartISO: now.toISOString(),   // reliable fallback for reload
                 totalBreakMs: bs.totalBreakMs
             }, { merge: true });
         } catch(e) { console.error('Break start error:', e); }
     } else {
-        // End break — accumulate break duration
+        // End break — accumulate break duration from breakStart to now
         const breakDuration = bs.breakStart ? (now - bs.breakStart) : 0;
         bs.totalBreakMs = (bs.totalBreakMs || 0) + breakDuration;
         bs.onBreak = false;
@@ -975,6 +983,7 @@ async function toggleBreak(name) {
             await firestore.collection('attendance').doc(name).set({
                 onBreak: false,
                 breakStart: null,
+                breakStartISO: null,
                 totalBreakMs: bs.totalBreakMs
             }, { merge: true });
         } catch(e) { console.error('Break end error:', e); }
