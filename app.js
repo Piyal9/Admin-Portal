@@ -880,15 +880,27 @@ function startDashboardTimers(todayLogs) {
 async function syncBreakStatesFromFirestore(todayLogs) {
     for (const r of todayLogs) {
         try {
-            const doc = await firestore.collection('attendance').doc(r.name).get();
-            if (doc.exists) {
-                const d = doc.data();
+            // Attendance docs use auto-generated IDs; use r.id when available,
+            // otherwise fall back to querying by name for today.
+            let d = null;
+            if (r.id) {
+                const snap = await firestore.collection('attendance').doc(r.id).get();
+                if (snap.exists) d = snap.data();
+            }
+            if (!d) {
+                const today = new Date().toLocaleDateString('en-IN');
+                const q = await firestore.collection('attendance')
+                    .where('name', '==', r.name)
+                    .where('date', '==', today)
+                    .limit(1)
+                    .get();
+                if (!q.empty) d = q.docs[0].data();
+            }
+            if (d) {
                 const bs = _breakStates[r.name] || { onBreak: false, breakStart: null, totalBreakMs: 0 };
                 bs.totalBreakMs = d.totalBreakMs || 0;
                 bs.onBreak = d.onBreak || false;
                 if (bs.onBreak && (d.breakStart || d.breakStartISO)) {
-                    // Restore the exact moment break started — used to freeze the timer display
-                    // Prefer breakStartISO (reliable ISO string) over Firestore Timestamp
                     if (d.breakStartISO) {
                         bs.breakStart = new Date(d.breakStartISO);
                     } else {
@@ -957,19 +969,33 @@ async function toggleBreak(name) {
     const bs = _breakStates[name] || { onBreak: false, breakStart: null, totalBreakMs: 0 };
     const now = new Date();
 
+    // Find the correct attendance doc ID for this employee today
+    async function getAttendanceDocId(empName) {
+        const today = new Date().toLocaleDateString('en-IN');
+        const q = await firestore.collection('attendance')
+            .where('name', '==', empName)
+            .where('date', '==', today)
+            .limit(1)
+            .get();
+        return q.empty ? null : q.docs[0].id;
+    }
+
     if (!bs.onBreak) {
         // Start break — freeze the timer at this exact moment
         bs.onBreak = true;
-        bs.breakStart = now;  // local Date used immediately to freeze display
+        bs.breakStart = now;
         _breakStates[name] = bs;
         updateBreakBtn(name, true);
         try {
-            await firestore.collection('attendance').doc(name).set({
-                onBreak: true,
-                breakStart: firebase.firestore.FieldValue.serverTimestamp(),
-                breakStartISO: now.toISOString(),   // reliable fallback for reload
-                totalBreakMs: bs.totalBreakMs
-            }, { merge: true });
+            const docId = await getAttendanceDocId(name);
+            if (docId) {
+                await firestore.collection('attendance').doc(docId).set({
+                    onBreak: true,
+                    breakStart: firebase.firestore.FieldValue.serverTimestamp(),
+                    breakStartISO: now.toISOString(),
+                    totalBreakMs: bs.totalBreakMs
+                }, { merge: true });
+            }
         } catch(e) { console.error('Break start error:', e); }
     } else {
         // End break — accumulate break duration from breakStart to now
@@ -980,12 +1006,15 @@ async function toggleBreak(name) {
         _breakStates[name] = bs;
         updateBreakBtn(name, false);
         try {
-            await firestore.collection('attendance').doc(name).set({
-                onBreak: false,
-                breakStart: null,
-                breakStartISO: null,
-                totalBreakMs: bs.totalBreakMs
-            }, { merge: true });
+            const docId = await getAttendanceDocId(name);
+            if (docId) {
+                await firestore.collection('attendance').doc(docId).set({
+                    onBreak: false,
+                    breakStart: null,
+                    breakStartISO: null,
+                    totalBreakMs: bs.totalBreakMs
+                }, { merge: true });
+            }
         } catch(e) { console.error('Break end error:', e); }
     }
 }
